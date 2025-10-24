@@ -3,6 +3,7 @@ import { useState, useRef } from 'react'
 import { ArrowLeft, Upload, CheckCircle, Clock, Leaf, Image, FileText, Download } from 'lucide-react'
 import ExpertConnectionModal from './ExpertConnectionModal'
 import RecommendationChatbot from './RecommendationChatbot'
+import API from '../lib/api'
 
 const crops = [
   { name: 'Apple', emoji: '🍎' }, { name: 'Orange', emoji: '🍊' }, { name: 'Tomato', emoji: '🍅' }, 
@@ -65,14 +66,9 @@ export default function ModernConsultationDashboard() {
     formData.append('isFollowup', isFollowUp)
 
     try {
-      const response = await fetch('/api/predict', {
-        method: 'POST',
-        body: formData
-      })
+      const result = await API.predict(formData)
       
-      const result = await response.json()
-      
-      if (response.ok) {
+      if (result.success) {
         setPrediction(result)
         setCompletionScore(100)
         
@@ -95,7 +91,7 @@ export default function ModernConsultationDashboard() {
       }
     } catch (error) {
       console.error('Prediction error:', error)
-      alert('Network error. Please check your connection and try again.')
+      alert(error.message || 'Network error. Please check your connection and try again.')
     } finally {
       setLoading(false)
     }

@@ -36,10 +36,19 @@ export default function WhatsAppOTPModal({ isOpen, onClose, onSuccess }: WhatsAp
     setError('')
 
     try {
+      // Get WhatsApp config from localStorage
+      const whatsappSecret = localStorage.getItem('whatsapp_secret')
+      const whatsappAccount = localStorage.getItem('whatsapp_account_id')
+      
       const response = await fetch('/api/auth/whatsapp-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: finalPhone, action: 'send' })
+        body: JSON.stringify({ 
+          phone: finalPhone, 
+          action: 'send',
+          whatsappSecret,
+          whatsappAccount
+        })
       })
 
       const data = await response.json()
@@ -47,6 +56,10 @@ export default function WhatsAppOTPModal({ isOpen, onClose, onSuccess }: WhatsAp
       if (data.success) {
         setStep('otp')
         setError('')
+        // Show demo OTP if available
+        if (data.demo_otp) {
+          setError(`Demo Mode - OTP: ${data.demo_otp}`)
+        }
       } else {
         setError(data.error || 'Failed to send OTP')
       }
@@ -153,9 +166,17 @@ export default function WhatsAppOTPModal({ isOpen, onClose, onSuccess }: WhatsAp
             </div>
 
             {error && (
-              <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="w-5 h-5 text-red-600" />
-                <p className="text-sm text-red-600">{error}</p>
+              <div className={`flex items-center space-x-2 p-3 border rounded-lg ${
+                error.includes('Demo Mode') 
+                  ? 'bg-blue-50 border-blue-200' 
+                  : 'bg-red-50 border-red-200'
+              }`}>
+                <AlertCircle className={`w-5 h-5 ${
+                  error.includes('Demo Mode') ? 'text-blue-600' : 'text-red-600'
+                }`} />
+                <p className={`text-sm ${
+                  error.includes('Demo Mode') ? 'text-blue-600' : 'text-red-600'
+                }`}>{error}</p>
               </div>
             )}
 

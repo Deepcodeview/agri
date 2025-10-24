@@ -219,21 +219,27 @@ export default function ExpertConnectionModal({ isOpen, onClose, cropType, disea
         </div>
       </div>
       
-      {showChat && chatExpert && (
-        <ConsultationChat
-          consultationId={Date.now()}
-          currentUserId={1}
-          currentUserName="राम कुमार"
-          currentUserRole="farmer"
-          farmerName="राम कुमार"
-          expertName={chatExpert.name}
-          isActive={true}
-          onClose={() => {
-            setShowChat(false)
-            setChatExpert(null)
-          }}
-        />
-      )}
+      {showChat && chatExpert && (() => {
+        const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        const userName = userData.name || 'Farmer';
+        const userId = userData.id || 1;
+        
+        return (
+          <ConsultationChat
+            consultationId={Date.now()}
+            currentUserId={userId}
+            currentUserName={userName}
+            currentUserRole="farmer"
+            farmerName={userName}
+            expertName={chatExpert.name}
+            isActive={true}
+            onClose={() => {
+              setShowChat(false)
+              setChatExpert(null)
+            }}
+          />
+        );
+      })()}
     </div>
   )
 }

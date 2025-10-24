@@ -4,6 +4,7 @@ import { Users, UserCheck, Settings, Trash2, Edit, Plus, Shield, Database, Activ
 import EventSystem from './EventSystem'
 import ConsultationWorkflow from './ConsultationWorkflow'
 import WhatsAppDashboard from './WhatsAppDashboard'
+import { API_CONFIG } from '../lib/config'
 
 interface SuperAdminDashboardProps {
   user: any
@@ -12,22 +13,99 @@ interface SuperAdminDashboardProps {
 
 export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashboardProps) {
   const [activeTab, setActiveTab] = useState('dashboard')
-  const [users, setUsers] = useState([
-    { id: 1, name: 'राम कुमार', email: 'ram@example.com', role: 'farmer', status: 'active', joinDate: '2024-01-15' },
-    { id: 2, name: 'Dr. Rajesh Kumar', email: 'rajesh@example.com', role: 'expert', status: 'active', joinDate: '2024-01-10' },
-    { id: 3, name: 'सुनीता देवी', email: 'sunita@example.com', role: 'farmer', status: 'inactive', joinDate: '2024-01-20' }
-  ])
   
-  const [experts, setExperts] = useState([
-    { id: 1, name: 'Dr. Rajesh Kumar', specialization: 'Plant Pathology', experience: '15 years', rating: 4.8, status: 'approved' },
-    { id: 2, name: 'Dr. Priya Sharma', specialization: 'Crop Disease Management', experience: '12 years', rating: 4.9, status: 'pending' },
-    { id: 3, name: 'Dr. Amit Singh', specialization: 'Fruit Crop Diseases', experience: '10 years', rating: 4.7, status: 'approved' }
-  ])
+  // Load data from API on component mount and when tab changes
+  useEffect(() => {
+    loadDashboardData()
+  }, [])
+  
+  useEffect(() => {
+    // Reload data when switching tabs to ensure fresh data
+    if (activeTab !== 'dashboard') {
+      loadDashboardData()
+    }
+  }, [activeTab])
+  
+  const loadDashboardData = async () => {
+    try {
+      setLoading(true)
+      const token = localStorage.getItem('token')
+      
+      console.log('Loading dashboard data with token:', token ? 'Present' : 'Missing')
+      
+      // Load users from real backend
+      const usersResponse = await fetch('https://backend.cvframeiq.in/api/users.php', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      
+      console.log('Users response status:', usersResponse.status)
+      
+      if (usersResponse.ok) {
+        const usersData = await usersResponse.json()
+        console.log('Users data received:', usersData)
+        setUsers(Array.isArray(usersData.data) ? usersData.data : [])
+      } else {
+        console.log('Failed to load users from backend')
+        setUsers([])
+      }
+      
+      // Load experts from real backend
+      const expertsResponse = await fetch('https://backend.cvframeiq.in/api/experts.php', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (expertsResponse.ok) {
+        const expertsData = await expertsResponse.json()
+        setExperts(Array.isArray(expertsData.data) ? expertsData.data : [])
+      }
+      
+      // Load consultations from real backend
+      const consultationsResponse = await fetch('https://backend.cvframeiq.in/api/consultations.php', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (consultationsResponse.ok) {
+        const consultationsData = await consultationsResponse.json()
+        setConsultations(Array.isArray(consultationsData.data) ? consultationsData.data : [])
+      }
+      
+      // Load states from real backend
+      const statesResponse = await fetch('https://backend.cvframeiq.in/api/states.php', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (statesResponse.ok) {
+        const statesData = await statesResponse.json()
+        setStates(Array.isArray(statesData.data) ? statesData.data : [])
+      }
+      
+      // Load crops from real backend
+      const cropsResponse = await fetch('https://backend.cvframeiq.in/api/crops.php', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+      if (cropsResponse.ok) {
+        const cropsData = await cropsResponse.json()
+        setCrops(Array.isArray(cropsData.data) ? cropsData.data : [])
+      }
+      
+    } catch (error) {
+      console.error('Error loading dashboard data:', error)
+      setDataLoadError(true)
+      
+      // Set empty arrays if backend fails
+      setUsers([])
+      setExperts([])
+      setConsultations([])
+      
+      console.log('⚠️ Backend connection failed.')
+    } finally {
+      setLoading(false)
+    }
+  }
+  const [users, setUsers] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [dataLoadError, setDataLoadError] = useState(false)
+  
+  const [experts, setExperts] = useState([])
 
-  const [consultations, setConsultations] = useState([
-    { id: 1, farmer: 'राम कुमार', expert: 'Dr. Rajesh Kumar', crop: 'Tomato', status: 'completed', date: '2024-01-15' },
-    { id: 2, farmer: 'सुनीता देवी', expert: 'Dr. Priya Sharma', crop: 'Potato', status: 'pending', date: '2024-01-16' }
-  ])
+  const [consultations, setConsultations] = useState([])
 
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingUser, setEditingUser] = useState<any>(null)
@@ -53,9 +131,9 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
   const [editingState, setEditingState] = useState<any>(null)
   const [editingCrop, setEditingCrop] = useState<any>(null)
   const [whatsappConfig, setWhatsappConfig] = useState({
-    apiSecret: '',
-    accountId: '',
-    baseUrl: 'https://wa.bitseva.in/api'
+    apiSecret: localStorage.getItem('whatsapp_secret') || '',
+    accountId: localStorage.getItem('whatsapp_account_id') || '',
+    baseUrl: localStorage.getItem('whatsapp_base_url') || 'https://wa.bitseva.in/api'
   })
   const [analytics, setAnalytics] = useState({
     dailyUsers: [120, 135, 148, 162, 180, 195, 210],
@@ -85,35 +163,84 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
     { id: 2, title: 'New Expert Registration', message: '3 experts pending approval', type: 'warning', read: false }
   ])
 
-  const handleDeleteUser = (userId: number) => {
+  const handleDeleteUser = async (userId: number) => {
     if (confirm('Are you sure you want to delete this user?')) {
-      const deletedUser = users.find(u => u.id === userId)
-      setUsers(users.filter(u => u.id !== userId))
-      // Log event
-      console.log(`Event: User ${deletedUser?.name} deleted by Super Admin`)
+      try {
+        const response = await fetch(`/api/users/${userId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+            'Content-Type': 'application/json'
+          }
+        })
+        
+        if (response.ok) {
+          const deletedUser = users.find(u => u.id === userId)
+          console.log(`Event: User ${deletedUser?.name} deleted by Super Admin`)
+          console.log('User deleted successfully')
+          loadDashboardData()
+        } else {
+          const error = await response.json()
+          console.log(`Error: ${error.message || 'Failed to delete user'}`)
+        }
+      } catch (error) {
+        console.error('Delete user error:', error)
+        console.log('Network error. Please try again.')
+      }
     }
   }
 
-  const handleToggleUserStatus = (userId: number) => {
+  const handleToggleUserStatus = async (userId: number) => {
     const user = users.find(u => u.id === userId)
-    setUsers(users.map(u => 
-      u.id === userId 
-        ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' }
-        : u
-    ))
-    // Log event
-    console.log(`Event: User ${user?.name} status changed to ${user?.status === 'active' ? 'inactive' : 'active'}`)
+    const newStatus = user?.status === 'active' ? 'inactive' : 'active'
+    
+    try {
+      const response = await fetch(`/api/users/${userId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: newStatus })
+      })
+      
+      if (response.ok) {
+        console.log(`Event: User ${user?.name} status changed to ${newStatus}`)
+        console.log(`User status updated to ${newStatus}`)
+        loadDashboardData()
+      } else {
+        const error = await response.json()
+        console.log(`Error: ${error.message || 'Failed to update user status'}`)
+      }
+    } catch (error) {
+      console.error('Update user status error:', error)
+      console.log('Network error. Please try again.')
+    }
   }
 
-  const handleApproveExpert = (expertId: number) => {
-    const expert = experts.find(e => e.id === expertId)
-    setExperts(experts.map(e => 
-      e.id === expertId 
-        ? { ...e, status: 'approved' }
-        : e
-    ))
-    // Log event
-    console.log(`Event: Expert ${expert?.name} approved by Super Admin`)
+  const handleApproveExpert = async (expertId: number) => {
+    try {
+      const response = await fetch(`/api/experts/${expertId}/approve`, {
+        method: 'PATCH',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (response.ok) {
+        const expert = experts.find(e => e.id === expertId)
+        console.log(`Event: Expert ${expert?.name} approved by Super Admin`)
+        console.log('Expert approved successfully')
+        loadDashboardData()
+      } else {
+        const error = await response.json()
+        console.log(`Error: ${error.message || 'Failed to approve expert'}`)
+      }
+    } catch (error) {
+      console.error('Approve expert error:', error)
+      console.log('Network error. Please try again.')
+    }
   }
 
   const stats = {
@@ -140,6 +267,12 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
             </div>
           </div>
           <div className="flex items-center space-x-4">
+            {dataLoadError && (
+              <div className="flex items-center space-x-2 bg-red-500/20 px-3 py-1 rounded-full">
+                <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                <span className="text-red-100 text-xs">Backend Offline</span>
+              </div>
+            )}
             <div className="relative">
               <Bell className="w-6 h-6 text-white cursor-pointer" />
               <span className="absolute -top-1 -right-1 bg-yellow-500 text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -345,14 +478,24 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
           <div className="card">
             <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
               <h2 className="text-xl font-semibold">User Management</h2>
-              <button 
-                onClick={() => setShowAddModal(true)}
-                className="btn-primary flex items-center"
-              >
-                <Plus size={16} className="mr-2" />
-                Add User
-              </button>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={loadDashboardData}
+                  className="btn-secondary flex items-center"
+                >
+                  <RefreshCw size={16} className="mr-2" />
+                  Refresh
+                </button>
+                <button 
+                  onClick={() => setShowAddModal(true)}
+                  className="btn-primary flex items-center"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Add User
+                </button>
+              </div>
             </div>
+
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-neutral-50">
@@ -422,8 +565,15 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
         {/* Experts Management */}
         {activeTab === 'experts' && (
           <div className="card">
-            <div className="p-6 border-b border-neutral-100">
+            <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Expert Management</h2>
+              <button 
+                onClick={loadDashboardData}
+                className="btn-secondary flex items-center"
+              >
+                <RefreshCw size={16} className="mr-2" />
+                Refresh
+              </button>
             </div>
             <div className="p-6 space-y-4">
               {experts.map(expert => (
@@ -471,13 +621,22 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
           <div className="card">
             <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
               <h2 className="text-xl font-semibold">State Management</h2>
-              <button 
-                onClick={() => setShowStateModal(true)}
-                className="btn-primary flex items-center"
-              >
-                <Plus size={16} className="mr-2" />
-                Add State
-              </button>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={loadDashboardData}
+                  className="btn-secondary flex items-center"
+                >
+                  <RefreshCw size={16} className="mr-2" />
+                  Refresh
+                </button>
+                <button 
+                  onClick={() => setShowStateModal(true)}
+                  className="btn-primary flex items-center"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Add State
+                </button>
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
@@ -512,7 +671,30 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
                             <Edit size={16} />
                           </button>
                           <button
-                            onClick={() => setStates(states.filter(s => s.id !== state.id))}
+                            onClick={async () => {
+                              if (confirm('Are you sure you want to delete this state?')) {
+                                try {
+                                  const response = await fetch(`/api/states/${state.id}`, {
+                                    method: 'DELETE',
+                                    headers: {
+                                      'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                      'Content-Type': 'application/json'
+                                    }
+                                  })
+                                  
+                                  if (response.ok) {
+                                    console.log('State deleted successfully')
+                                    loadDashboardData()
+                                  } else {
+                                    const error = await response.json()
+                                    console.log(`Error: ${error.message || 'Failed to delete state'}`)
+                                  }
+                                } catch (error) {
+                                  console.error('Delete state error:', error)
+                                  console.log('Network error. Please try again.')
+                                }
+                              }
+                            }}
                             className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
                           >
                             <Trash2 size={16} />
@@ -532,13 +714,22 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
           <div className="card">
             <div className="p-6 border-b border-neutral-100 flex items-center justify-between">
               <h2 className="text-xl font-semibold">Crop Management</h2>
-              <button 
-                onClick={() => setShowCropModal(true)}
-                className="btn-primary flex items-center"
-              >
-                <Plus size={16} className="mr-2" />
-                Add Crop
-              </button>
+              <div className="flex space-x-2">
+                <button 
+                  onClick={loadDashboardData}
+                  className="btn-secondary flex items-center"
+                >
+                  <RefreshCw size={16} className="mr-2" />
+                  Refresh
+                </button>
+                <button 
+                  onClick={() => setShowCropModal(true)}
+                  className="btn-primary flex items-center"
+                >
+                  <Plus size={16} className="mr-2" />
+                  Add Crop
+                </button>
+              </div>
             </div>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
               {crops.map(crop => (
@@ -566,7 +757,30 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
                       Edit
                     </button>
                     <button
-                      onClick={() => setCrops(crops.filter(c => c.id !== crop.id))}
+                      onClick={async () => {
+                        if (confirm('Are you sure you want to delete this crop?')) {
+                          try {
+                            const response = await fetch(`/api/crops/${crop.id}`, {
+                              method: 'DELETE',
+                              headers: {
+                                'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                                'Content-Type': 'application/json'
+                              }
+                            })
+                            
+                            if (response.ok) {
+                              console.log('Crop deleted successfully')
+                              loadDashboardData()
+                            } else {
+                              const error = await response.json()
+                              console.log(`Error: ${error.message || 'Failed to delete crop'}`)
+                            }
+                          } catch (error) {
+                            console.error('Delete crop error:', error)
+                            console.log('Network error. Please try again.')
+                          }
+                        }
+                      }}
                       className="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg"
                     >
                       <Trash2 size={16} />
@@ -792,11 +1006,14 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
                     <label className="block text-sm font-medium text-neutral-700 mb-2">Account Unique ID</label>
                     <input 
                       type="text" 
-                      placeholder="Enter WhatsApp Account Unique ID" 
+                      placeholder="Enter WhatsApp Account Unique ID (Optional - for specific account operations)" 
                       className="input-field w-full"
                       value={whatsappConfig.accountId}
                       onChange={(e) => setWhatsappConfig({...whatsappConfig, accountId: e.target.value})}
                     />
+                    <p className="text-xs text-gray-500 mt-1">
+                      This will be auto-filled when you link a WhatsApp account. Leave empty if you don't have one yet.
+                    </p>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-neutral-700 mb-2">API Base URL</label>
@@ -811,15 +1028,33 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
                     <button 
                       onClick={async () => {
                         try {
+                          // Save to localStorage for immediate use
+                          localStorage.setItem('whatsapp_secret', whatsappConfig.apiSecret)
+                          localStorage.setItem('whatsapp_account_id', whatsappConfig.accountId)
+                          localStorage.setItem('whatsapp_base_url', whatsappConfig.baseUrl)
+                          
+                          // Also save to database via API
                           const response = await fetch('/api/config', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ type: 'whatsapp', data: whatsappConfig })
+                            body: JSON.stringify({ 
+                              type: 'whatsapp', 
+                              data: {
+                                api_secret: whatsappConfig.apiSecret,
+                                account_id: whatsappConfig.accountId,
+                                base_url: whatsappConfig.baseUrl
+                              }
+                            })
                           })
-                          const result = await response.json()
-                          alert(result.success ? result.message : 'Failed to save')
+                          
+                          if (response.ok) {
+                            console.log('✅ WhatsApp API configuration saved successfully!')
+                          } else {
+                            console.log('⚠️ Configuration saved locally but failed to save to database')
+                          }
                         } catch (error) {
-                          alert('Error saving configuration')
+                          console.error('Error saving configuration:', error)
+                          console.log('❌ Error saving configuration')
                         }
                       }}
                       className="btn-primary flex-1"
@@ -828,20 +1063,27 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
                     </button>
                     <button 
                       onClick={async () => {
-                        if (!whatsappConfig.apiSecret || !whatsappConfig.accountId) {
-                          alert('Please enter API Secret and Account ID first')
+                        if (!whatsappConfig.apiSecret) {
+                          console.log('Please enter API Secret first')
                           return
                         }
                         try {
-                          const response = await fetch('/api/config', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ type: 'whatsapp', data: whatsappConfig })
-                          })
-                          const result = await response.json()
-                          alert(result.connectionStatus === 'connected' ? '✅ Connection successful!' : '❌ Connection failed')
+                          // Test connection by getting accounts
+                          const response = await fetch(`${whatsappConfig.baseUrl}/get/wa.accounts?secret=${whatsappConfig.apiSecret}`)
+                          
+                          if (response.ok) {
+                            const result = await response.json()
+                            if (result.status === 200) {
+                              console.log(`✅ Connection successful! Found ${result.data?.length || 0} WhatsApp accounts.`)
+                            } else {
+                              console.log(`❌ API Error: ${result.message || 'Unknown error'}`)
+                            }
+                          } else {
+                            console.log('❌ Connection failed. Please check your API secret.')
+                          }
                         } catch (error) {
-                          alert('Error testing connection')
+                          console.error('Error testing connection:', error)
+                          console.log('❌ Network error. Please check your internet connection.')
                         }
                       }}
                       className="btn-secondary px-4"
@@ -917,21 +1159,40 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <h3 className="text-xl font-bold mb-4">Add New State</h3>
-            <div className="space-y-4">
-              <input type="text" placeholder="State Name" className="input-field w-full" />
-              <input type="text" placeholder="State Code (e.g., PB)" className="input-field w-full" />
-              <input type="number" placeholder="Number of Districts" className="input-field w-full" />
+            <form id="stateForm" className="space-y-4">
+              <input type="text" name="name" placeholder="State Name" className="input-field w-full" required />
+              <input type="text" name="code" placeholder="State Code (e.g., PB)" className="input-field w-full" required />
+              <input type="number" name="districts" placeholder="Number of Districts" className="input-field w-full" />
               <div className="flex space-x-3">
                 <button 
-                  onClick={() => {
-                    setStates([...states, {
-                      id: Date.now(),
-                      name: 'New State',
-                      code: 'NS',
-                      districts: 10,
-                      status: 'active'
-                    }])
-                    setShowStateModal(false)
+                  onClick={async () => {
+                    const formData = new FormData(document.getElementById('stateForm') as HTMLFormElement)
+                    const stateData = {
+                      name: formData.get('name'),
+                      code: formData.get('code'),
+                      districts: parseInt(formData.get('districts') as string) || 0
+                    }
+                    
+                    try {
+                      const response = await fetch('https://backend.cvframeiq.in/api/states.php', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify(stateData)
+                      })
+                      
+                      if (response.ok) {
+                        console.log('State added successfully')
+                        loadDashboardData()
+                        setShowStateModal(false)
+                      } else {
+                        console.log('Failed to add state')
+                      }
+                    } catch (error) {
+                      console.error('Error adding state:', error)
+                    }
                   }}
                   className="btn-primary flex-1"
                 >
@@ -941,7 +1202,7 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
                   Cancel
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}
@@ -951,29 +1212,48 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl w-full max-w-md p-6">
             <h3 className="text-xl font-bold mb-4">Add New Crop</h3>
-            <div className="space-y-4">
-              <input type="text" placeholder="Crop Name" className="input-field w-full" />
-              <input type="text" placeholder="Emoji (e.g., 🌱)" className="input-field w-full" />
-              <select className="input-field w-full">
-                <option>Select Category</option>
-                <option>Fruit</option>
-                <option>Vegetable</option>
-                <option>Cereal</option>
-                <option>Pulse</option>
+            <form id="cropForm" className="space-y-4">
+              <input type="text" name="name" placeholder="Crop Name" className="input-field w-full" required />
+              <input type="text" name="emoji" placeholder="Emoji (e.g., 🌱)" className="input-field w-full" />
+              <select name="category" className="input-field w-full" required>
+                <option value="">Select Category</option>
+                <option value="Fruit">Fruit</option>
+                <option value="Vegetable">Vegetable</option>
+                <option value="Cereal">Cereal</option>
+                <option value="Pulse">Pulse</option>
               </select>
-              <input type="number" placeholder="Number of Diseases" className="input-field w-full" />
+              <input type="number" name="diseases" placeholder="Number of Diseases" className="input-field w-full" />
               <div className="flex space-x-3">
                 <button 
-                  onClick={() => {
-                    setCrops([...crops, {
-                      id: Date.now(),
-                      name: 'New Crop',
-                      emoji: '🌱',
-                      category: 'Vegetable',
-                      diseases: 5,
-                      status: 'active'
-                    }])
-                    setShowCropModal(false)
+                  onClick={async () => {
+                    const formData = new FormData(document.getElementById('cropForm') as HTMLFormElement)
+                    const cropData = {
+                      name: formData.get('name'),
+                      emoji: formData.get('emoji') || '🌱',
+                      category: formData.get('category'),
+                      diseases: parseInt(formData.get('diseases') as string) || 0
+                    }
+                    
+                    try {
+                      const response = await fetch('https://backend.cvframeiq.in/api/crops.php', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        },
+                        body: JSON.stringify(cropData)
+                      })
+                      
+                      if (response.ok) {
+                        console.log('Crop added successfully')
+                        loadDashboardData()
+                        setShowCropModal(false)
+                      } else {
+                        console.log('Failed to add crop')
+                      }
+                    } catch (error) {
+                      console.error('Error adding crop:', error)
+                    }
                   }}
                   className="btn-primary flex-1"
                 >
@@ -983,7 +1263,7 @@ export default function SuperAdminDashboard({ user, onLogout }: SuperAdminDashbo
                   Cancel
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}

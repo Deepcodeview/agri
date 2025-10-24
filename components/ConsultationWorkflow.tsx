@@ -18,6 +18,7 @@ interface Consultation {
   status: 'pending' | 'assigned' | 'in_progress' | 'completed'
   aiDiagnosis: string
   expertResponse?: string
+  rating?: number
   createdAt: string
   updatedAt: string
 }

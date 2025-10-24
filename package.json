@@ -12,9 +12,7 @@
     "next": "14.0.0",
     "react": "^18",
     "react-dom": "^18",
-    "formidable": "^3.5.1",
     "lucide-react": "^0.294.0",
-    "mysql2": "^3.6.5",
     "jspdf": "^2.5.1",
     "html2canvas": "^1.4.1"
   },

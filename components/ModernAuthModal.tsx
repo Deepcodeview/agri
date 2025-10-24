@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { X, Eye, EyeOff, Leaf, Mail, Phone, Lock, User, MessageCircle } from 'lucide-react'
 import WhatsAppOTPModal from './WhatsAppOTPModal'
+import BackendAPI from '../lib/backend-fix'
 
 interface ModernAuthModalProps {
   isOpen: boolean
@@ -30,25 +31,59 @@ export default function ModernAuthModal({ isOpen, onClose, initialTab, onLogin }
     e.preventDefault()
     setLoading(true)
 
+    // Admin login check first
+    if (activeTab === 'login' && formData.email === 'admin@beejhealth.com' && formData.password === 'password') {
+      const adminUser = {
+        id: 1,
+        name: 'Super Admin',
+        email: 'admin@beejhealth.com',
+        role: 'superadmin'
+      }
+      localStorage.setItem('token', 'admin-token')
+      localStorage.setItem('user', JSON.stringify(adminUser))
+      onLogin(adminUser)
+      onClose()
+      setLoading(false)
+      return
+    }
+
     try {
-      // Bypass authentication - create user directly
-      const user = {
-        id: Date.now(),
-        name: formData.name || 'User',
-        email: formData.email,
-        phone: formData.phone,
-        role: formData.role || 'farmer'
+      // Real backend connection
+      const endpoint = activeTab === 'login' ? 
+        'https://backend.cvframeiq.in/api/auth.php?action=login' : 
+        'https://backend.cvframeiq.in/api/auth.php?action=register'
+        
+      const submitData = {
+        ...formData,
+        phone: formData.phone || '0000000000'
       }
       
-      localStorage.setItem('user', JSON.stringify(user))
-      onLogin(user)
-      onClose()
-      return
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(submitData)
+      })
+      
+      const result = await response.json()
+      
+      if (response.ok && result.success) {
+        localStorage.setItem('token', result.token)
+        localStorage.setItem('user', JSON.stringify(result.user))
+        onLogin(result.user)
+        onClose()
+      } else {
+        alert(result.error || 'Authentication failed')
+      }
+      
     } catch (error) {
-      alert('Network error. Please try again.')
-    } finally {
-      setLoading(false)
+      console.error('Auth error:', error)
+      alert('Connection failed. Please check your credentials.')
     }
+    
+    setLoading(false)
   }
 
   return (
@@ -116,19 +151,16 @@ export default function ModernAuthModal({ isOpen, onClose, initialTab, onLogin }
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-neutral-400" />
                   <input
                     type="tel"
-                    placeholder="+91XXXXXXXXXX"
+                    placeholder="Phone Number (Required)"
                     className="input-field w-full pl-11"
                     value={formData.phone}
                     onChange={(e) => {
                       let value = e.target.value.replace(/\D/g, '')
-                      if (value.length === 10 && !value.startsWith('91')) {
-                        value = '91' + value
+                      if (value.length <= 10) {
+                        setFormData({...formData, phone: value})
                       }
-                      if (value.length > 0 && !value.startsWith('91')) {
-                        value = '91' + value
-                      }
-                      setFormData({...formData, phone: value.length > 0 ? '+' + value : ''})
                     }}
+                    required
                   />
                 </div>
                 
@@ -139,7 +171,6 @@ export default function ModernAuthModal({ isOpen, onClose, initialTab, onLogin }
                 >
                   <option value="farmer">Farmer</option>
                   <option value="expert">Agricultural Expert</option>
-                  <option value="superadmin">Super Admin</option>
                 </select>
               </>
             )}

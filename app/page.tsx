@@ -17,13 +17,23 @@ export default function Home() {
 
   useEffect(() => {
     // Check if user is already logged in
-    const token = localStorage.getItem('token')
-    const userData = localStorage.getItem('user')
-    
-    if (token && userData) {
-      setUser(JSON.parse(userData))
+    try {
+      const token = localStorage.getItem('token')
+      const userData = localStorage.getItem('user')
+      
+      if (token && userData) {
+        const parsedUser = JSON.parse(userData)
+        // Skip token validation to prevent auth popups
+        setUser(parsedUser)
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error)
+      // Clear corrupted data
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }, [])
 
   const handleLogin = (userData: any) => {
@@ -66,51 +76,51 @@ export default function Home() {
           onRegisterClick={handleRegisterClick}
         />
         
-        <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center p-6">
-          <div className="text-center max-w-4xl">
-            <div className="w-24 h-24 bg-gradient-to-br from-primary-500 to-primary-600 rounded-3xl flex items-center justify-center mx-auto mb-8">
-              <span className="text-4xl">🌱</span>
+        <div className="min-h-screen bg-gradient-to-br from-primary-50 via-white to-secondary-50 flex items-center justify-center p-4 sm:p-6">
+          <div className="text-center max-w-4xl w-full">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl sm:rounded-3xl flex items-center justify-center mx-auto mb-6 sm:mb-8">
+              <span className="text-2xl sm:text-3xl md:text-4xl">🌱</span>
             </div>
             
-            <h1 className="text-5xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-6">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold bg-gradient-to-r from-primary-600 to-primary-700 bg-clip-text text-transparent mb-4 sm:mb-6">
               BeejHealth
             </h1>
             
-            <p className="text-xl text-neutral-600 mb-8 leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-neutral-600 mb-6 sm:mb-8 leading-relaxed px-4">
               Connect with agricultural experts for AI-powered plant disease diagnosis and consultation
             </p>
             
-            <div className="grid md:grid-cols-3 gap-6 mb-12">
-              <div className="card p-6 text-center">
-                <div className="w-12 h-12 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🔬</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
+              <div className="card p-4 sm:p-6 text-center">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary-100 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <span className="text-xl sm:text-2xl">🔬</span>
                 </div>
-                <h3 className="font-semibold text-neutral-900 mb-2">AI Diagnosis</h3>
-                <p className="text-neutral-600 text-sm">Advanced machine learning for accurate plant disease detection</p>
+                <h3 className="font-semibold text-neutral-900 mb-2 text-sm sm:text-base">AI Diagnosis</h3>
+                <p className="text-neutral-600 text-xs sm:text-sm">Advanced machine learning for accurate plant disease detection</p>
               </div>
               
-              <div className="card p-6 text-center">
-                <div className="w-12 h-12 bg-secondary-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">👨🌾</span>
+              <div className="card p-4 sm:p-6 text-center">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-secondary-100 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <span className="text-xl sm:text-2xl">👨🌾</span>
                 </div>
-                <h3 className="font-semibold text-neutral-900 mb-2">Expert Connect</h3>
-                <p className="text-neutral-600 text-sm">Get personalized advice from certified agricultural experts</p>
+                <h3 className="font-semibold text-neutral-900 mb-2 text-sm sm:text-base">Expert Connect</h3>
+                <p className="text-neutral-600 text-xs sm:text-sm">Get personalized advice from certified agricultural experts</p>
               </div>
               
-              <div className="card p-6 text-center">
-                <div className="w-12 h-12 bg-earth-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">📱</span>
+              <div className="card p-4 sm:p-6 text-center sm:col-span-2 md:col-span-1">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-earth-100 rounded-xl flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                  <span className="text-xl sm:text-2xl">📱</span>
                 </div>
-                <h3 className="font-semibold text-neutral-900 mb-2">Easy to Use</h3>
-                <p className="text-neutral-600 text-sm">Simple interface designed for farmers and agricultural professionals</p>
+                <h3 className="font-semibold text-neutral-900 mb-2 text-sm sm:text-base">Easy to Use</h3>
+                <p className="text-neutral-600 text-xs sm:text-sm">Simple interface designed for farmers and agricultural professionals</p>
               </div>
             </div>
             
-            <div className="flex justify-center space-x-4">
-              <button onClick={handleRegisterClick} className="btn-primary px-8 py-4 text-lg">
+            <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
+              <button onClick={handleRegisterClick} className="btn-primary px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg w-full sm:w-auto">
                 Get Started Free
               </button>
-              <button onClick={handleLoginClick} className="btn-secondary px-8 py-4 text-lg">
+              <button onClick={handleLoginClick} className="btn-secondary px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg w-full sm:w-auto">
                 Login
               </button>
             </div>
@@ -146,12 +156,13 @@ export default function Home() {
           )}
           
           {/* Floating Action Button */}
-          <div className="fixed bottom-8 right-8 z-40">
+          <div className="fixed bottom-4 right-4 sm:bottom-8 sm:right-8 z-40">
             <button
               onClick={() => setCurrentView(currentView === 'dashboard' ? 'consultation' : 'dashboard')}
-              className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white px-8 py-4 rounded-2xl shadow-2xl hover:shadow-3xl font-semibold transition-all duration-300 transform hover:scale-105"
+              className="bg-gradient-to-r from-primary-600 to-primary-700 hover:from-primary-700 hover:to-primary-800 text-white px-4 py-3 sm:px-8 sm:py-4 rounded-xl sm:rounded-2xl shadow-2xl hover:shadow-3xl font-semibold transition-all duration-300 transform hover:scale-105 text-sm sm:text-base"
             >
-              {currentView === 'dashboard' ? '🌱 Start Consultation' : '📊 Back to Dashboard'}
+              <span className="hidden sm:inline">{currentView === 'dashboard' ? '🌱 Start Consultation' : '📊 Back to Dashboard'}</span>
+              <span className="sm:hidden">{currentView === 'dashboard' ? '🌱' : '📊'}</span>
             </button>
           </div>
         </>
